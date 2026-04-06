@@ -1,0 +1,276 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap');
+@import "tailwindcss";
+
+:root {
+  color: #102132;
+  background: #f4f8fb;
+  font-family: 'Satoshi', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.14), transparent 22%),
+    radial-gradient(circle at 85% 0%, rgba(148, 163, 184, 0.12), transparent 24%),
+    linear-gradient(180deg, #fbfdff 0%, #f4f8fb 45%, #edf3f7 100%);
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.3);
+  color: #082f49;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Satoshi', sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  font-family: 'Satoshi', sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.floating-landing {
+  animation: landing-float 6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.floating-landing-glow {
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.18) 0%, rgba(34, 211, 238, 0.08) 35%, transparent 72%);
+  filter: blur(16px);
+}
+
+.home-orbit {
+  animation: home-orbit 10s ease-in-out infinite;
+}
+
+.home-dashboard-card {
+  position: relative;
+}
+
+.home-dashboard-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.5) 32%, transparent 58%);
+  transform: translateX(-120%);
+  animation: home-dashboard-sheen 6.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.home-progress-bar {
+  width: 72%;
+  animation: home-progress-fill 1.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.home-bar-fill {
+  animation: home-bar-rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: left;
+}
+
+.scroll-reveal {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translate3d(0, 28px, 0) scale(0.985);
+  transition:
+    opacity 820ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 820ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 820ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.scroll-reveal.reveal-left {
+  transform: translate3d(-34px, 0, 0) scale(0.985);
+}
+
+.scroll-reveal.reveal-right {
+  transform: translate3d(34px, 0, 0) scale(0.985);
+}
+
+.scroll-reveal.reveal-soft {
+  transform: translate3d(0, 18px, 0) scale(0.96);
+}
+
+.scroll-reveal.reveal-line {
+  opacity: 0;
+  filter: none;
+  transform: scaleX(0.24);
+  transform-origin: left;
+  transition:
+    opacity 760ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 760ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scroll-reveal.reveal-line.is-visible {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.about-delay-1 {
+  transition-delay: 0.08s;
+}
+
+.about-delay-2 {
+  transition-delay: 0.16s;
+}
+
+.about-delay-3 {
+  transition-delay: 0.24s;
+}
+
+.about-delay-4 {
+  transition-delay: 0.32s;
+}
+
+.about-delay-5 {
+  transition-delay: 0.4s;
+}
+
+.about-glow-drift {
+  animation: about-glow-drift 9s ease-in-out infinite;
+}
+
+.about-panel-float {
+  animation: about-panel-float 7s ease-in-out infinite;
+}
+
+.about-value-card {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.about-value-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(34, 211, 238, 0.32);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+@keyframes about-glow-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -14px, 0) scale(1.04);
+  }
+}
+
+@keyframes home-orbit {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(18px, -12px, 0) scale(1.05);
+  }
+}
+
+@keyframes home-dashboard-sheen {
+  0%,
+  100% {
+    transform: translateX(-120%);
+  }
+
+  55% {
+    transform: translateX(140%);
+  }
+}
+
+@keyframes home-progress-fill {
+  0% {
+    width: 0;
+  }
+
+  100% {
+    width: 72%;
+  }
+}
+
+@keyframes home-bar-rise {
+  0% {
+    transform: scaleX(0.18);
+    opacity: 0.45;
+  }
+
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes about-panel-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal,
+  .scroll-reveal.is-visible,
+  .about-glow-drift,
+  .about-panel-float,
+  .home-orbit,
+  .home-dashboard-card::after,
+  .home-progress-bar,
+  .home-bar-fill,
+  .about-value-card {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes landing-float {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-1deg);
+  }
+
+  50% {
+    transform: translate3d(0, -14px, 0) rotate(1deg);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-1deg);
+  }
+}
