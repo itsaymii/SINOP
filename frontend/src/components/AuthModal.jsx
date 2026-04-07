@@ -5,6 +5,7 @@ export function AuthModal({ mode, onAuthenticate, onClose, onSwitchMode, success
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [monthlyBudgetGoal, setMonthlyBudgetGoal] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -30,6 +31,7 @@ export function AuthModal({ mode, onAuthenticate, onClose, onSwitchMode, success
     setFullName('')
     setEmail(initialEmail || '')
     setPassword('')
+    setShowPassword(false)
     setMonthlyBudgetGoal('')
     setError('')
     setIsSubmitting(false)
@@ -119,13 +121,22 @@ export function AuthModal({ mode, onAuthenticate, onClose, onSwitchMode, success
 
             <label className="block space-y-2">
               <span className="text-sm font-semibold text-slate-800">Password</span>
-              <input
-                type="password"
-                placeholder="........"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:bg-cyan-50/50"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="........"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-20 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:bg-cyan-50/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((currentValue) => !currentValue)}
+                  className="absolute inset-y-0 right-3 my-auto inline-flex h-9 items-center justify-center rounded-full px-3 text-xs font-bold uppercase tracking-[0.18em] text-cyan-700 transition hover:bg-cyan-50"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </label>
 
             {!isLogin && (
