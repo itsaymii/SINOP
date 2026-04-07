@@ -1,6 +1,5 @@
 from datetime import date, timedelta
 from decimal import Decimal
-
 from django.contrib.auth import authenticate
 from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce, TruncMonth
