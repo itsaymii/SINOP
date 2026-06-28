@@ -1,4 +1,4 @@
-const API_BASE = '/api'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 async function parseResponse(response) {
   const isJson = response.headers.get('content-type')?.includes('application/json')
