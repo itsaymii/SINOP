@@ -49,6 +49,10 @@ export function fetchDashboardSummary(token) {
   return request(token, '/dashboard/')
 }
 
+export function fetchAdminDashboardSummary(token) {
+  return request(token, '/admin/dashboard/')
+}
+
 export function fetchTransactions(token, query) {
   return request(token, withQuery('/transactions/', query))
 }
@@ -150,6 +154,38 @@ export function fetchNotifications(token) {
   return request(token, '/notifications/')
 }
 
+export function createNotification(token, payload) {
+  return request(token, '/notifications/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function markNotificationRead(token, id) {
   return request(token, `/notifications/${id}/mark_read/`, { method: 'POST' })
+}
+
+// --- ADMIN ENDPOINTS ---
+export function fetchAdminUsers(token) {
+  return request(token, '/admin/users/')
+}
+
+export function fetchAdminTransactions(token) {
+  return request(token, '/admin/transactions/')
+}
+
+export function fetchAdminCategories(token) {
+  return request(token, '/admin/categories/')
+}
+
+export function fetchAdminBudgets(token) {
+  return request(token, '/admin/budgets/')
+}
+
+export function fetchAdminFeedback(token) {
+  return request(token, '/admin/feedback/')
+}
+
+export function fetchAdminLogs(token) {
+  return request(token, '/admin/logs/')
 }

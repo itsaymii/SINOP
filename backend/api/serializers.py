@@ -1,5 +1,6 @@
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction as db_transaction
@@ -11,10 +12,12 @@ from .models import (
     Category,
     DashboardWidget,
     FinancialAccount,
+    Feedback,
     IncomeSource,
     Notification,
     RecurringTransaction,
     SavingsGoal,
+    SecurityLog,
     Transaction,
     UserProfile,
     UserSettings,
@@ -103,13 +106,14 @@ def reverse_transaction_effect(instance):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    is_staff = serializers.BooleanField()
     full_name = serializers.SerializerMethodField()
     monthly_budget_goal = serializers.SerializerMethodField()
     settings = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'full_name', 'monthly_budget_goal', 'settings']
+        fields = ['id', 'email', 'full_name', 'monthly_budget_goal', 'settings', 'is_staff', 'date_joined']
 
     def get_full_name(self, user):
         profile = get_user_profile(user)
@@ -156,6 +160,7 @@ class RegisterSerializer(serializers.Serializer):
             username=email,
             email=email,
             password=password,
+            is_staff=email.lower() == getattr(settings, 'DEFAULT_ADMIN_EMAIL', 'admin@sinop.local').lower(),
         )
         profile = bootstrap_user_data(user, full_name)
         profile.monthly_budget_goal = monthly_budget_goal
@@ -420,3 +425,83 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'title', 'message', 'notification_type', 'is_read', 'scheduled_for', 'created_at']
         read_only_fields = ['created_at']
+
+from django.db.models import Count
+
+class AdminTransactionSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    type = serializers.CharField(source='transaction_type', read_only=True)
+    category = serializers.SerializerMethodField()
+    date = serializers.DateField(source='transaction_date', read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = ['id', 'user', 'type', 'category', 'amount', 'date']
+
+    def get_user(self, obj):
+        return obj.user.profile.full_name if hasattr(obj.user, 'profile') and obj.user.profile.full_name else obj.user.email
+
+    def get_category(self, obj):
+        return obj.category.name if obj.category else 'Uncategorized'
+
+
+class AdminCategorySerializer(serializers.ModelSerializer):
+    total = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'total']
+
+    def get_total(self, obj):
+        return obj.transactions.count()
+
+
+class AdminBudgetSerializer(serializers.ModelSerializer):
+    category = serializers.CharField(source='category.name', read_only=True)
+    limit = serializers.DecimalField(source='amount', max_digits=12, decimal_places=2, read_only=True)
+    spent = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Budget
+        fields = ['id', 'category', 'limit', 'spent']
+
+    def get_spent(self, obj):
+        from django.db.models import Sum
+        from django.db.models.functions import Coalesce
+        
+        spent = Transaction.objects.filter(
+            user=obj.user,
+            category=obj.category,
+            transaction_type='expense',
+            transaction_date__month=obj.month.month,
+            transaction_date__year=obj.month.year
+        ).aggregate(total=Coalesce(Sum('amount'), Decimal('0.00')))['total']
+        return str(spent)
+
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Feedback
+        fields = ['id', 'user', 'email', 'message', 'status', 'created_at']
+    
+    def get_user(self, obj):
+        if obj.user and hasattr(obj.user, 'profile'):
+            return obj.user.profile.full_name or 'Guest'
+        return 'Guest'
+
+
+class SecurityLogSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    time = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SecurityLog
+        fields = ['id', 'title', 'user', 'time', 'status']
+        
+    def get_user(self, obj):
+        return obj.user.email if obj.user else 'System'
+        
+    def get_time(self, obj):
+        return obj.created_at.strftime('%b %d, %Y %I:%M %p')

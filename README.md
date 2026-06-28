@@ -4,11 +4,22 @@ Sinop is a personal finance web app with a React frontend and a Django REST back
 
 New accounts start with an empty finance workspace. Users manually create their own accounts, categories, and transactions instead of receiving demo finance records.
 
-## Stack
+## Tech Stack
 
-- `frontend/` - React 19, React Router, Vite, Tailwind CSS
-- `backend/` - Django, Django REST Framework, DRF token auth, CORS
-- Database schema currently runs on SQLite in local development and is structured to translate cleanly to PostgreSQL
+- Frontend
+  - React 19
+  - Vite 8
+  - React Router v7
+  - Tailwind CSS 4
+  - `lucide-react` for icon components
+- Backend
+  - Django 6.0.3
+  - Django REST Framework
+  - DRF Token Authentication (`rest_framework.authtoken`)
+  - `django-cors-headers` for frontend/backend local development
+- Database
+  - SQLite for local development
+  - Clean schema structure for future PostgreSQL migration
 
 ## Project structure
 

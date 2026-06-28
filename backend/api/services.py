@@ -1,10 +1,44 @@
 from datetime import date
 
+from django.conf import settings
+from django.contrib.auth import get_user_model
+
 from .models import (
     DashboardWidget,
     UserProfile,
     UserSettings,
 )
+
+User = get_user_model()
+
+
+def ensure_admin_account():
+    admin_email = getattr(settings, 'DEFAULT_ADMIN_EMAIL', 'admin@sinop.local').strip().lower()
+    admin_password = getattr(settings, 'DEFAULT_ADMIN_PASSWORD', 'SinopAdmin123!')
+    admin_full_name = getattr(settings, 'DEFAULT_ADMIN_FULL_NAME', 'Sinop Admin')
+
+    user = User.objects.filter(email__iexact=admin_email).first()
+    if user is None:
+        user = User.objects.create_user(
+            username=admin_email,
+            email=admin_email,
+            password=admin_password,
+            is_staff=True,
+        )
+        profile = ensure_profile(user, admin_full_name)
+        profile.monthly_budget_goal = None
+        profile.save(update_fields=['monthly_budget_goal', 'updated_at'])
+        ensure_settings(user)
+        for order, (key, title) in enumerate(DEFAULT_WIDGETS, start=1):
+            DashboardWidget.objects.get_or_create(
+                user=user,
+                key=key,
+                defaults={'title': title, 'display_order': order, 'is_visible': True},
+            )
+    elif not user.is_staff:
+        user.is_staff = True
+        user.save(update_fields=['is_staff'])
+    return user
 
 DEFAULT_WIDGETS = [
     ('summary', 'Summary cards'),

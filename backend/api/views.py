@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
-from django.contrib.auth import authenticate
-from django.db.models import Q, Sum
+from django.contrib.auth import authenticate, get_user_model
+from django.db.models import DecimalField, Q, Sum, Value
 from django.db.models.functions import Coalesce, TruncMonth
 from rest_framework import permissions, status, viewsets
 from rest_framework.authentication import TokenAuthentication
@@ -41,7 +41,9 @@ from .serializers import (
     UserSerializer,
     UserSettingsSerializer,
 )
-from .services import bootstrap_user_data, ensure_profile, ensure_settings, first_day_of_month
+from .services import bootstrap_user_data, ensure_admin_account, ensure_profile, ensure_settings, first_day_of_month
+
+User = get_user_model()
 
 
 class UserOwnedModelViewSet(viewsets.ModelViewSet):
@@ -90,6 +92,7 @@ def login(request):
 
     email = serializer.validated_data['email']
     password = serializer.validated_data['password']
+    ensure_admin_account()
     user = authenticate(username=email, password=password)
 
     if user is None:
@@ -225,120 +228,117 @@ class UserSettingsView(APIView):
         return Response({'settings': serializer.data})
 
 
-class DashboardSummaryView(APIView):
+class AdminDashboardView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user = request.user
-        bootstrap_user_data(user)
-        today = date.today()
-        month_start = first_day_of_month(today)
-        next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
-
-        accounts = FinancialAccount.objects.filter(user=user, is_active=True)
-        transactions = Transaction.objects.filter(user=user)
-        monthly_transactions = transactions.filter(transaction_date__gte=month_start, transaction_date__lt=next_month)
-        budgets = Budget.objects.filter(user=user, month=month_start).select_related('category')
-        goals = SavingsGoal.objects.filter(user=user)
-        bills = BillReminder.objects.filter(user=user, is_active=True).order_by('due_date')[:5]
-        notifications = Notification.objects.filter(user=user).order_by('-created_at')[:5]
-        widgets = DashboardWidget.objects.filter(user=user)
-        income_sources = IncomeSource.objects.filter(user=user, is_active=True)
-
-        total_balance = sum(
-            (
-                account.balance * Decimal('-1')
-                if account.account_type in {'credit', 'loan'}
-                else account.balance
+        # Check if user is staff
+        if not request.user.is_staff:
+            return Response(
+                {'detail': 'Only staff members can access the admin dashboard.'},
+                status=status.HTTP_403_FORBIDDEN
             )
-            for account in accounts
-        )
-        monthly_income = monthly_transactions.filter(transaction_type='income').aggregate(
-            total=Coalesce(Sum('amount'), Decimal('0.00'))
-        )['total']
-        monthly_expenses = monthly_transactions.filter(transaction_type='expense').aggregate(
-            total=Coalesce(Sum('amount'), Decimal('0.00'))
-        )['total']
-        monthly_savings = monthly_income - monthly_expenses
 
-        category_breakdown = (
-            monthly_transactions.filter(transaction_type='expense', category__isnull=False)
-            .values('category__name', 'category__color')
-            .annotate(total=Coalesce(Sum('amount'), Decimal('0.00')))
-            .order_by('-total')
-        )
-
-        spending_trend = (
-            transactions.filter(transaction_type='expense')
-            .annotate(month=TruncMonth('transaction_date'))
-            .values('month')
-            .annotate(total=Coalesce(Sum('amount'), Decimal('0.00')))
-            .order_by('month')
-        )
-
-        budget_progress = []
+        # Get all users count
+        total_users = User.objects.count()
+        
+        # Get active users (users with transactions in last 30 days)
+        thirty_days_ago = date.today() - timedelta(days=30)
+        active_users = User.objects.filter(
+            transactions__transaction_date__gte=thirty_days_ago
+        ).distinct().count()
+        
+        # Get total budgets
+        total_budgets = Budget.objects.count()
+        
+        # Get total transactions
+        total_transactions = Transaction.objects.count()
+        
+        # Get all users with their data
+        users = User.objects.prefetch_related('financial_accounts', 'transactions', 'budgets').all()
+        users_data = []
+        for user in users:
+            profile = ensure_profile(user)
+            try:
+                total_balance = sum(
+                    acc.balance for acc in user.financial_accounts.filter(is_active=True)
+                )
+            except:
+                total_balance = 0
+                
+            users_data.append({
+                'id': user.id,
+                'email': user.email,
+                'full_name': profile.full_name,
+                'date_joined': user.date_joined,
+                'transactions_count': user.transactions.count(),
+                'budgets_count': user.budgets.count(),
+                'total_balance': str(total_balance),
+            })
+        
+        # Get recent transactions across all users
+        recent_transactions = Transaction.objects.select_related(
+            'user', 'category'
+        ).order_by('-transaction_date')[:20]
+        
+        transactions_data = []
+        for tx in recent_transactions:
+            transactions_data.append({
+                'id': tx.id,
+                'user': tx.user.email,
+                'type': 'Income' if tx.transaction_type == 'income' else 'Expense',
+                'category': tx.category.name if tx.category else 'Uncategorized',
+                'amount': str(tx.amount),
+                'date': tx.transaction_date.isoformat(),
+            })
+        
+        # Get all categories
+        categories = Category.objects.all()
+        categories_data = []
+        for cat in categories:
+            transaction_count = Transaction.objects.filter(category=cat).count()
+            categories_data.append({
+                'id': cat.id,
+                'name': cat.name,
+                'type': cat.category_type,
+                'total': transaction_count,
+            })
+        
+        # Get all budgets with progress
+        budgets = Budget.objects.select_related('user', 'category').all()
+        budgets_data = []
         for budget in budgets:
-            spent = monthly_transactions.filter(transaction_type='expense', category=budget.category).aggregate(
-                total=Coalesce(Sum('amount'), Decimal('0.00'))
-            )['total']
-            progress = float((spent / budget.amount) * 100) if budget.amount else 0
-            status_label = 'on-track'
-            if progress >= 100:
-                status_label = 'exceeded'
-            elif progress >= budget.alert_threshold:
-                status_label = 'nearing-limit'
-            budget_progress.append(
-                {
-                    'id': budget.id,
-                    'category': budget.category.name,
-                    'color': budget.category.color,
-                    'budget_amount': str(budget.amount),
-                    'spent_amount': str(spent),
-                    'progress_percentage': round(progress, 2),
-                    'status': status_label,
-                }
-            )
+            # Calculate spent amount
+            spent = Transaction.objects.filter(
+                user=budget.user,
+                category=budget.category,
+                transaction_type='expense'
+            ).aggregate(total=Coalesce(Sum('amount'), Decimal('0')))['total']
+            
+            budgets_data.append({
+                'id': budget.id,
+                'user': budget.user.email,
+                'category': budget.category.name if budget.category else 'General',
+                'limit': str(budget.limit),
+                'spent': str(spent),
+                'start_date': budget.start_date.isoformat() if budget.start_date else None,
+                'end_date': budget.end_date.isoformat() if budget.end_date else None,
+            })
+        
+        # Get system stats
+        server_online = True
+        
+        return Response({
+            'total_users': total_users,
+            'active_users': active_users,
+            'total_budgets': total_budgets,
+            'total_transactions': total_transactions,
+            'users': users_data,
+            'transactions': transactions_data,
+            'categories': categories_data,
+            'budgets': budgets_data,
+            'server_online': server_online,
+        })
 
-        return Response(
-            {
-                'summary': {
-                    'total_balance': str(total_balance),
-                    'monthly_income': str(monthly_income),
-                    'monthly_expenses': str(monthly_expenses),
-                    'monthly_savings': str(monthly_savings),
-                },
-                'recent_transactions': TransactionSerializer(transactions[:8], many=True).data,
-                'transactions': TransactionSerializer(transactions[:50], many=True).data,
-                'accounts': FinancialAccountSerializer(accounts, many=True).data,
-                'categories': CategorySerializer(Category.objects.filter(user=user), many=True).data,
-                'budgets': budget_progress,
-                'goals': SavingsGoalSerializer(goals, many=True).data,
-                'bills': BillReminderSerializer(bills, many=True).data,
-                'income_sources': IncomeSourceSerializer(income_sources, many=True).data,
-                'notifications': NotificationSerializer(notifications, many=True).data,
-                'widgets': DashboardWidgetSerializer(widgets, many=True).data,
-                'analytics': {
-                    'expenses_by_category': [
-                        {
-                            'category': item['category__name'],
-                            'color': item['category__color'],
-                            'total': str(item['total']),
-                        }
-                        for item in category_breakdown
-                    ],
-                    'spending_over_time': [
-                        {
-                            'month': item['month'].strftime('%b %Y') if item['month'] else '',
-                            'total': str(item['total']),
-                        }
-                        for item in spending_trend
-                    ],
-                    'monthly_comparison': [
-                        {'label': 'Income', 'value': str(monthly_income)},
-                        {'label': 'Expenses', 'value': str(monthly_expenses)},
-                        {'label': 'Savings', 'value': str(monthly_savings)},
-                    ],
-                },
-            }
-        )
+

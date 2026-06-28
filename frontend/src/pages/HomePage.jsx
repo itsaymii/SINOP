@@ -95,12 +95,6 @@ export function HomePage() {
               >
                 Get Started for Free
               </button>
-              <Link
-                to="/contact"
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/88 px-6 py-3 text-sm font-bold tracking-[0.01em] text-slate-700 transition hover:-translate-y-0.5 hover:bg-white sm:min-w-52"
-              >
-                Talk to us
-              </Link>
             </div>
           </div>
         </div>

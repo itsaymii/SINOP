@@ -1,0 +1,62 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <div class="module">
+    <h1>{{ site_header }}</h1>
+    <p class="subtitle">Quick administration summary for Sinop</p>
+  </div>
+
+  <div class="dashboard-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1.5rem 0;">
+    <div class="module aligned">
+      <h2>Total users</h2>
+      <p style="font-size:2rem;margin:0.5rem 0 0;">{{ total_users }}</p>
+    </div>
+    <div class="module aligned">
+      <h2>Active users</h2>
+      <p style="font-size:2rem;margin:0.5rem 0 0;">{{ active_users }}</p>
+    </div>
+    <div class="module aligned">
+      <h2>Total accounts</h2>
+      <p style="font-size:2rem;margin:0.5rem 0 0;">{{ total_accounts }}</p>
+    </div>
+    <div class="module aligned">
+      <h2>Total balance</h2>
+      <p style="font-size:2rem;margin:0.5rem 0 0;">₱{{ net_balance|floatformat:2 }}</p>
+    </div>
+    <div class="module aligned">
+      <h2>Transactions</h2>
+      <p style="font-size:2rem;margin:0.5rem 0 0;">{{ total_transactions }}</p>
+    </div>
+    <div class="module aligned">
+      <h2>Categories</h2>
+      <p style="font-size:2rem;margin:0.5rem 0 0;">{{ total_categories }}</p>
+    </div>
+  </div>
+
+  <div class="module" style="margin-bottom:1.5rem;">
+    <h2>Recent signups</h2>
+    <ul>
+      {% for user in recent_users %}
+        <li>{{ user.email }}{% if user.get_full_name %} — {{ user.get_full_name }}{% endif %}</li>
+      {% empty %}
+        <li>No recent users yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {% if app_list %}
+    <div class="dashboard-models">
+      {% for app in app_list %}
+        <div class="module" style="margin-bottom:1rem;">
+          <h2>{{ app.name }}</h2>
+          <ul class="model-list">
+            {% for model in app.models %}
+              <li><a href="{{ model.admin_url }}">{{ model.name }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

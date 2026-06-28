@@ -4,12 +4,13 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { Shell } from './components/Shell'
 import { fetchCurrentUser, loginAccount, logoutAccount, registerAccount, updateProfile } from './lib/auth'
 import { AboutPage } from './pages/AboutPage'
-import { ContactPage } from './pages/ContactPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { HomePage } from './pages/HomePage'
 import { InsightsPage } from './pages/InsightsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TransactionsPage } from './pages/TransactionsPage'
+import { AdminDashboardPage } from './pages/AdminDashboardPage'
+import { AdminLoginPage } from './pages/AdminLoginPage'
 
 const AUTH_TOKEN_STORAGE_KEY = 'sinop-auth-token'
 const AUTH_USER_STORAGE_KEY = 'sinop-auth-user'
@@ -23,6 +24,18 @@ function ProtectedRoute({ children, authReady, isAuthenticated }) {
 
   if (!isAuthenticated) {
     return <Navigate to={`/?auth=login&redirect=${encodeURIComponent(location.pathname)}`} replace />
+  }
+
+  return children
+}
+
+function AdminProtectedRoute({ children, authReady, isAuthenticated, currentUser }) {
+  if (!authReady) {
+    return null
+  }
+
+  if (!isAuthenticated || !currentUser?.is_staff) {
+    return <Navigate to="/admin/login" replace />
   }
 
   return children
@@ -166,7 +179,24 @@ function App() {
     window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(response.user))
     setAuthToken(response.token)
     setCurrentUser(response.user)
-    navigate(redirectTo, { replace: true })
+
+    const nextRoute = response.user?.is_staff ? '/admin' : redirectTo
+    navigate(nextRoute, { replace: true })
+    return response
+  }
+
+  async function handleAdminLogin({ email, password }) {
+    const response = await loginAccount({ email, password })
+
+    if (!response.user?.is_staff) {
+      throw new Error('These credentials are not authorized for the admin dashboard.')
+    }
+
+    window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, response.token)
+    window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(response.user))
+    setAuthToken(response.token)
+    setCurrentUser(response.user)
+    navigate('/admin', { replace: true })
     return response
   }
 
@@ -196,6 +226,25 @@ function App() {
     setCurrentUser(response.user)
     window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(response.user))
     return response.user
+  }
+
+  const isAdminRoute = location.pathname.startsWith('/admin')
+
+  if (isAdminRoute) {
+    return (
+      <Routes>
+        <Route path="/admin/login" element={<AdminLoginPage onAdminLogin={handleAdminLogin} />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminProtectedRoute authReady={authReady} isAuthenticated={isAuthenticated} currentUser={currentUser}>
+              <AdminDashboardPage authToken={authToken} currentUser={currentUser} onLogout={handleLogout} />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/admin/login" replace />} />
+      </Routes>
+    )
   }
 
   return (
@@ -246,7 +295,6 @@ function App() {
           }
         />
         <Route path="/about" element={<AboutPage />} />
-        <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<Navigate to="/?auth=login" replace />} />
         <Route path="/register" element={<Navigate to="/?auth=register" replace />} />
       </Routes>

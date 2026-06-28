@@ -2,10 +2,10 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    AdminDashboardView,
     BillReminderViewSet,
     BudgetViewSet,
     CategoryViewSet,
-    DashboardSummaryView,
     DashboardWidgetViewSet,
     FinancialAccountViewSet,
     IncomeSourceViewSet,
@@ -40,6 +40,6 @@ urlpatterns = [
     path('auth/me/', me, name='me'),
     path('auth/logout/', logout, name='logout'),
     path('settings/', UserSettingsView.as_view(), name='user-settings'),
-    path('dashboard/', DashboardSummaryView.as_view(), name='dashboard-summary'),
+    path('admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
     path('', include(router.urls)),
 ]

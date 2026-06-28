@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'api',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -136,3 +137,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ],
 }
+
+DEFAULT_ADMIN_EMAIL = 'admin@sinop.local'
+DEFAULT_ADMIN_PASSWORD = 'SinopAdmin123!'
+DEFAULT_ADMIN_FULL_NAME = 'Sinop Admin'

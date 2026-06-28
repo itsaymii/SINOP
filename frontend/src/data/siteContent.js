@@ -1,7 +1,6 @@
 export const navItems = [
   { label: 'Home', to: '/' },
   { label: 'About', to: '/about' },
-  { label: 'Contact', to: '/contact' },
 ]
 
 export const authenticatedNavItems = [
