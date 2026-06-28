@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
-import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,7 +29,7 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,.sinop.onrender.com').split(',')
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,sinop.onrender.com').split(',')
 
 
 # Application definition
@@ -130,10 +129,10 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    origin.strip()
+    origin.strip().rstrip('/')
     for origin in os.environ.get(
         'CORS_ALLOWED_ORIGINS',
-        'http://localhost:5173,http://127.0.0.1:5173,https://sinop-flame.vercel.app/'
+        'http://localhost:5173,http://127.0.0.1:5173,https://sinop-flame.vercel.app,https://sinop-iota.vercel.app'
     ).split(',')
     if origin.strip()
 ]
